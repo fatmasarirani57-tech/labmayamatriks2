@@ -1,0 +1,1117 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Maya Matriks Interaktif</title>
+  <style>
+    :root{
+      --deep:#0e1530;
+      --deep-2:#070b22;
+      --panel:rgba(22,31,69,.84);
+      --line:#2c3868;
+      --amber:#ffb454;
+      --teal:#5fe0c9;
+      --ink:#f4f2ea;
+      --muted:#9aa3c7;
+      --soft:#b8c7ed;
+      --vh:1vh;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;min-height:100%;background:var(--deep-2)}
+    body{
+      width:100%;
+      min-height:calc(100 * min(var(--vh, 1vh), 1vh));
+      overflow:hidden;
+      font-family:"Segoe UI","Trebuchet MS",Helvetica,Arial,sans-serif;
+      color:var(--ink);
+    }
+
+    button,input{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible{
+      outline:2px solid var(--teal);
+      outline-offset:3px;
+    }
+
+    .app-shell{
+      position:relative;
+      width:100%;
+      min-height:calc(100 * min(var(--vh, 1vh), 1vh));
+      overflow:hidden;
+      background:
+        radial-gradient(circle at 84% 12%,rgba(255,180,84,.13),transparent 26%),
+        radial-gradient(circle at 7% 94%,rgba(95,224,201,.12),transparent 33%),
+        linear-gradient(160deg,#0e1530,#0a1030 60%,#070b22);
+    }
+
+    .app-shell::before,.splash-grid{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        linear-gradient(rgba(44,56,104,.8) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(44,56,104,.8) 1px,transparent 1px);
+      background-size:38px 38px;
+      opacity:.16;
+    }
+
+    .glass{
+      background:var(--panel);
+      border:1px solid rgba(95,224,201,.18);
+      box-shadow:0 18px 45px rgba(0,0,0,.25);
+      backdrop-filter:blur(16px);
+    }
+
+    .screen-content{
+      position:relative;
+      z-index:2;
+      display:flex;
+      flex-direction:column;
+      width:100%;
+      height:calc(100 * min(var(--vh, 1vh), 1vh));
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:1rem;
+      margin:12px 12px 0;
+      padding:12px 20px;
+      border-radius:18px;
+    }
+
+    .brand{
+      display:flex;
+      min-width:0;
+      align-items:center;
+      gap:12px;
+    }
+
+    .brand-mark{
+      display:grid;
+      width:40px;
+      height:40px;
+      flex:0 0 auto;
+      place-items:center;
+      border-radius:12px;
+      background:var(--amber);
+      color:#17142d;
+      font-family:Georgia,serif;
+      font-size:24px;
+      font-weight:700;
+    }
+
+    .brand-copy{min-width:0}
+    .brand-copy h2{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .brand-copy p{margin:3px 0 0;font-size:.875rem}
+
+    .header-actions{display:flex;gap:8px}
+
+    .button{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-height:42px;
+      border:0;
+      border-radius:12px;
+      padding:10px 14px;
+      font-weight:800;
+      transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+    }
+
+    .button:hover{transform:translateY(-2px)}
+    .action-button{background:var(--amber);color:#261a0d}
+    .action-button:hover{box-shadow:0 10px 25px rgba(255,180,84,.28)}
+    .secondary-button{
+      background:#101d44;
+      color:#d9fff5;
+      border:1px solid rgba(95,224,201,.35);
+    }
+    .secondary-button:hover{background:rgba(95,224,201,.12)}
+
+    .button-icon{
+      display:inline-grid;
+      width:18px;
+      height:18px;
+      place-items:center;
+      font-size:17px;
+      line-height:1;
+    }
+
+    .tabbar{
+      display:flex;
+      gap:8px;
+      margin:12px 12px 0;
+      padding:0 4px 4px;
+      overflow-x:auto;
+    }
+
+    .tab-btn{
+      flex:0 0 auto;
+      border:1px solid transparent;
+      border-radius:12px;
+      padding:10px 16px;
+      background:transparent;
+      color:var(--muted);
+      font-size:.875rem;
+      font-weight:700;
+      transition:.2s ease;
+    }
+
+    .tab-btn:hover{background:rgba(95,224,201,.1);color:var(--ink)}
+    .tab-btn.active{
+      background:var(--teal);
+      color:#0d1b2d;
+      box-shadow:0 0 22px rgba(95,224,201,.28);
+    }
+
+    main{
+      min-height:0;
+      flex:1;
+      padding:0 12px 12px;
+    }
+
+    .view-panel{
+      display:none;
+      height:100%;
+      animation:lift .32s ease both;
+    }
+
+    .view-panel.active{display:block}
+
+    .scroll-panel{
+      height:100%;
+      overflow:auto;
+      padding-top:12px;
+      padding-right:4px;
+    }
+
+    .scroll-panel::-webkit-scrollbar{width:6px}
+    .scroll-panel::-webkit-scrollbar-thumb{
+      border-radius:9px;
+      background:rgba(95,224,201,.35);
+    }
+
+    .theory-layout{
+      display:grid;
+      grid-template-columns:3fr 2fr;
+      gap:16px;
+      min-height:100%;
+    }
+
+    .center-layout{
+      display:flex;
+      min-height:100%;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .simulation-layout{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+      min-height:100%;
+    }
+
+    .panel{
+      border-radius:24px;
+      padding:24px;
+    }
+
+    .kicker{
+      display:inline-block;
+      border-radius:999px;
+      padding:5px 12px;
+      font-size:.75rem;
+      font-weight:800;
+      letter-spacing:.03em;
+      background:rgba(255,180,84,.14);
+      color:var(--amber);
+    }
+
+    h1,h2,h3,p{overflow-wrap:anywhere}
+    h2{font-size:1.5rem}
+    h3{font-size:1.05rem}
+    .panel h2{margin:14px 0 0}
+    .panel h3{margin:0}
+    .lead{margin:12px 0 0;line-height:1.65;color:var(--soft)}
+    .small-copy{font-size:.9rem;line-height:1.55;color:var(--muted)}
+
+    .card-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:24px;
+    }
+
+    .step-grid{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:12px;
+      margin-top:28px;
+    }
+
+    .card{border-radius:16px;padding:16px;background:rgba(16,29,68,.6);border:1px solid rgba(95,224,201,.14)}
+    .card p{margin:8px 0 0}
+    .step-number{color:var(--amber);font-size:1.5rem;font-weight:800}
+
+    .formula-panel{
+      display:flex;
+      min-height:300px;
+      flex-direction:column;
+      justify-content:flex-end;
+    }
+
+    .formula{
+      margin:14px 0 0;
+      color:#fff4df;
+      font-family:Georgia,serif;
+      font-size:2rem;
+      text-align:center;
+    }
+
+    .matrix-pair{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-top:20px;
+    }
+
+    .matrix-label{margin:0 0 8px;text-align:center}
+
+    .matrix-box{
+      position:relative;
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:8px 10px;
+      justify-content:center;
+      padding:10px 14px;
+    }
+
+    .matrix-box::before,.matrix-box::after{
+      content:"";
+      position:absolute;
+      top:3px;
+      bottom:3px;
+      width:7px;
+      border-color:var(--amber);
+    }
+
+    .matrix-box::before{
+      left:0;
+      border-top:2px solid;
+      border-bottom:2px solid;
+      border-left:2px solid;
+    }
+
+    .matrix-box::after{
+      right:0;
+      border-top:2px solid;
+      border-right:2px solid;
+      border-bottom:2px solid;
+    }
+
+    .matrix-input{
+      width:100%;
+      min-width:0;
+      height:42px;
+      border:1px solid rgba(95,224,201,.34);
+      border-radius:9px;
+      background:#101d44;
+      color:#effffb;
+      text-align:center;
+      font-family:"Courier New",monospace;
+      font-weight:700;
+    }
+
+    .operation-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:8px;
+      margin-top:16px;
+    }
+
+    .operation-choice{
+      border:1px solid rgba(95,224,201,.2);
+      border-radius:12px;
+      padding:12px;
+      background:#101d44;
+      color:#d9fff5;
+      font-weight:700;
+      transition:.18s ease;
+    }
+
+    .operation-choice:hover{border-color:var(--teal)}
+    .operation-choice.selected{
+      border-color:var(--teal);
+      background:#1d625f;
+      color:white;
+    }
+
+    .operation-wide{grid-column:1 / -1}
+
+    .hint-panel{
+      margin-top:20px;
+      border-radius:16px;
+      padding:16px;
+      background:rgba(16,29,68,.6);
+      border:1px solid rgba(255,180,84,.18);
+    }
+
+    .result-panel{
+      display:flex;
+      min-height:280px;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+
+    .result-expression{margin:18px 0 0;color:var(--teal);font-size:.9rem;font-weight:800}
+    .result-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      margin-top:16px;
+    }
+
+    .result-grid span{
+      display:grid;
+      min-width:42px;
+      min-height:34px;
+      place-items:center;
+      border-radius:6px;
+      background:rgba(95,224,201,.12);
+      color:#e6fff8;
+      font-family:"Courier New",monospace;
+      font-weight:700;
+    }
+
+    .result-note{margin:16px 0 0;color:#b9c8e8;font-size:.9rem;line-height:1.55}
+    .determinant-box{
+      margin-top:20px;
+      padding-top:16px;
+      border-top:1px solid rgba(255,255,255,.1);
+    }
+
+    .determinant-display{
+      margin:8px 0 0;
+      color:#fff4df;
+      font-family:Georgia,serif;
+      font-size:1.25rem;
+    }
+
+    .worksheet-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+    }
+
+    .questions{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:12px;
+      margin-top:24px;
+    }
+
+    .guide-panel{
+      margin-top:20px;
+      border-radius:16px;
+      padding:20px;
+      background:rgba(16,29,68,.6);
+      border:1px solid rgba(95,224,201,.18);
+    }
+
+    .hidden{display:none!important}
+
+    .developer-panel{max-width:900px;overflow:hidden}
+    .developer-layout{
+      display:grid;
+      grid-template-columns:220px 1fr;
+      align-items:center;
+      gap:32px;
+    }
+
+    .avatar-shell{
+      display:grid;
+      width:216px;
+      height:216px;
+      margin:auto;
+      place-items:center;
+      overflow:hidden;
+      border:4px solid rgba(95,224,201,.5);
+      border-radius:32px;
+      background:
+        radial-gradient(circle at 38% 28%,rgba(255,180,84,.58),transparent 20%),
+        radial-gradient(circle at 67% 70%,rgba(95,224,201,.45),transparent 28%),
+        linear-gradient(135deg,#101d44,#263467);
+      box-shadow:0 0 35px rgba(95,224,201,.2);
+    }
+
+    .avatar-initials{
+      color:#fff4df;
+      font-family:Georgia,serif;
+      font-size:4rem;
+      font-weight:700;
+      letter-spacing:-.12em;
+      text-shadow:0 4px 16px rgba(0,0,0,.28);
+    }
+
+    .accent-rule{
+      width:80px;
+      height:1px;
+      margin-top:24px;
+      background:var(--amber);
+    }
+
+    .splash{
+      position:absolute;
+      z-index:30;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      overflow:auto;
+      background:
+        radial-gradient(circle at 82% 18%,rgba(255,180,84,.16),transparent 42%),
+        radial-gradient(circle at 8% 92%,rgba(95,224,201,.12),transparent 45%),
+        linear-gradient(160deg,#0e1530 0%,#0a1030 60%,#070b22 100%);
+      transition:opacity .65s ease,visibility .65s ease;
+    }
+
+    .splash.is-hidden{visibility:hidden;opacity:0;pointer-events:none}
+    .splash-inner{
+      position:relative;
+      z-index:1;
+      display:grid;
+      width:min(1120px,100%);
+      grid-template-columns:1.05fr .95fr;
+      align-items:center;
+      gap:48px;
+    }
+
+    .splash-eyebrow{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      margin:0;
+      color:var(--teal);
+      font-size:.85rem;
+      font-weight:700;
+      letter-spacing:.08em;
+    }
+
+    .splash-dot{
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      background:var(--teal);
+      box-shadow:0 0 15px var(--teal);
+      animation:pulse 2s infinite;
+    }
+
+    .splash-title{
+      margin:14px 0 0;
+      font-size:clamp(4rem,10vw,7.3rem);
+      line-height:.86;
+      letter-spacing:-.08em;
+      font-weight:800;
+    }
+
+    .splash-copy{
+      max-width:490px;
+      margin:20px 0 0;
+      color:var(--muted);
+      font-size:clamp(1rem,2vw,1.28rem);
+      line-height:1.55;
+    }
+
+    .splash-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+    .splash-tag{
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:8px 16px;
+      background:rgba(255,255,255,.035);
+      font-size:.875rem;
+      font-weight:700;
+    }
+
+    .loading-wrap{max-width:420px;margin-top:30px}
+    .loading-meta{
+      display:flex;
+      justify-content:space-between;
+      margin-bottom:8px;
+      color:var(--soft);
+      font-size:.75rem;
+      font-weight:800;
+      letter-spacing:.05em;
+    }
+
+    .loading-track{
+      height:7px;
+      overflow:hidden;
+      border-radius:999px;
+      background:rgba(255,255,255,.09);
+    }
+
+    .loading-fill{
+      width:0;
+      height:100%;
+      border-radius:inherit;
+      background:linear-gradient(90deg,var(--teal),var(--amber));
+      transition:width .18s ease;
+    }
+
+    .start-button{margin-top:24px}
+    .start-button:disabled{cursor:not-allowed;opacity:.5;transform:none;box-shadow:none}
+
+    .matrix-hero{
+      display:flex;
+      min-height:340px;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .hero-bracket{
+      color:var(--amber);
+      font-family:Georgia,serif;
+      font-size:clamp(11rem,23vw,20rem);
+      line-height:.7;
+      text-shadow:0 0 55px rgba(255,180,84,.32);
+    }
+
+    .hero-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:19px 27px;
+      padding:0 16px;
+    }
+
+    .hero-cell{
+      min-width:35px;
+      color:var(--muted);
+      text-align:center;
+      font-family:"Courier New",monospace;
+      font-size:clamp(1.5rem,4vw,3rem);
+      font-weight:700;
+    }
+
+    .hero-cell.teal{color:var(--teal);text-shadow:0 0 22px rgba(95,224,201,.5)}
+    .hero-cell.amber{color:var(--amber);text-shadow:0 0 22px rgba(255,180,84,.5)}
+
+    .splash-grade{
+      position:absolute;
+      right:28px;
+      bottom:24px;
+      border:1px solid rgba(255,180,84,.5);
+      border-radius:8px;
+      padding:8px 12px;
+      font-size:.875rem;
+      font-weight:700;
+    }
+
+    @keyframes lift{
+      from{opacity:0;transform:translateY(8px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    @keyframes pulse{
+      50%{transform:scale(1.3);opacity:.55}
+    }
+
+    @media(max-width:900px){
+      body{overflow:auto}
+      .app-shell,.screen-content{height:auto;min-height:calc(100 * min(var(--vh, 1vh), 1vh))}
+      .screen-content{min-height:calc(100 * min(var(--vh, 1vh), 1vh))}
+      main{min-height:650px}
+      .theory-layout,.simulation-layout{grid-template-columns:1fr}
+      .step-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .developer-layout{grid-template-columns:1fr}
+      .developer-panel{margin:0 auto}
+    }
+
+    @media(max-width:650px){
+      .topbar{padding:11px 14px}
+      .brand-copy p{display:none}
+      .header-actions .button{padding:10px}
+      .header-actions .button span:last-child{display:none}
+      .panel{padding:20px}
+      .card-grid,.questions{grid-template-columns:1fr}
+      .step-grid{grid-template-columns:1fr}
+      .splash-inner{grid-template-columns:1fr;gap:8px;padding:24px 4px}
+      .matrix-hero{order:-1;min-height:210px}
+      .hero-bracket{font-size:10rem}
+      .hero-grid{gap:13px 16px}
+      .splash-grade{right:18px;bottom:16px}
+      .worksheet-head{align-items:flex-start;flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <section id="splash-screen" class="splash" aria-label="Layar pembuka">
+      <div class="splash-grid"></div>
+      <div class="splash-inner">
+        <div>
+          <p class="splash-eyebrow"><span class="splash-dot" aria-hidden="true"></span> LABORATORIUM MAYA &middot; ALJABAR LINEAR</p>
+          <h1 class="splash-title">MATRIKS</h1>
+          <p class="splash-copy">Jelajahi ordo, operasi, determinan, dan invers matriks lewat simulasi interaktif — semuanya berjalan langsung di peramban tanpa perlu koneksi internet.</p>
+          <div class="splash-tags">
+            <span class="splash-tag">Operasi Matriks</span>
+            <span class="splash-tag">Determinan &amp; Invers</span>
+            <span class="splash-tag">Kelas XI</span>
+          </div>
+          <div class="loading-wrap">
+            <div class="loading-meta">
+              <span>MEMUAT LABORATORIUM</span>
+              <span id="loading-status" aria-live="polite">0%</span>
+            </div>
+            <div class="loading-track">
+              <div id="loading-fill" class="loading-fill"></div>
+            </div>
+          </div>
+          <button id="start-button" type="button" class="button action-button start-button" disabled>
+            <span class="button-icon" aria-hidden="true">▶</span> <span>Mulai Belajar</span>
+          </button>
+        </div>
+        <div class="matrix-hero" aria-hidden="true">
+          <span class="hero-bracket">[</span>
+          <div class="hero-grid">
+            <span class="hero-cell">2</span><span class="hero-cell teal">5</span><span class="hero-cell">1</span>
+            <span class="hero-cell amber">7</span><span class="hero-cell">3</span><span class="hero-cell">9</span>
+            <span class="hero-cell">4</span><span class="hero-cell teal">0</span><span class="hero-cell">6</span>
+          </div>
+          <span class="hero-bracket">]</span>
+        </div>
+      </div>
+      <p class="splash-grade">Materi Kelas XI</p>
+    </section>
+
+    <div class="screen-content">
+      <header class="topbar glass">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">Σ</div>
+          <div class="brand-copy">
+            <h2>Lab Maya Matriks Interaktif</h2>
+            <p>Simulasi &amp; latihan aljabar linear</p>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button id="sound-button" type="button" class="button secondary-button" aria-pressed="true">
+            <span class="button-icon" aria-hidden="true">♬</span> <span>Suara</span>
+          </button>
+          <button id="reset-button" type="button" class="button action-button">
+            <span class="button-icon" aria-hidden="true">↺</span> <span>Reset</span>
+          </button>
+        </div>
+      </header>
+
+      <nav class="tabbar" aria-label="Navigasi laboratorium">
+        <button type="button" class="tab-btn active" data-tab="theory">Teori</button>
+        <button type="button" class="tab-btn" data-tab="procedure">Prosedur</button>
+        <button type="button" class="tab-btn" data-tab="simulation">Simulasi</button>
+        <button type="button" class="tab-btn" data-tab="worksheet">Lembar Kerja</button>
+        <button type="button" class="tab-btn" data-tab="developer">Pengembang</button>
+      </nav>
+
+      <main>
+        <section id="theory" class="view-panel active" aria-label="Teori matriks">
+          <div class="scroll-panel theory-layout">
+            <article class="panel glass">
+              <p class="kicker">TEORI DASAR</p>
+              <h2>Apa itu Matriks?</h2>
+              <p class="lead">Matriks adalah susunan bilangan dalam baris dan kolom yang digunakan untuk menyederhanakan sistem persamaan linear, transformasi geometri, dan berbagai masalah aljabar lainnya.</p>
+              <div class="card-grid">
+                <article class="card">
+                  <h3>Operasi Dasar</h3>
+                  <p>Penjumlahan, pengurangan, dan perkalian matriks dilakukan berdasarkan aturan posisi elemen dan ordo matriks.</p>
+                </article>
+                <article class="card">
+                  <h3>Determinan</h3>
+                  <p>Determinan adalah nilai skalar yang menunjukkan apakah suatu matriks memiliki invers atau tidak.</p>
+                </article>
+                <article class="card">
+                  <h3>Invers Matriks</h3>
+                  <p>Invers matriks digunakan untuk menyelesaikan sistem persamaan linear dalam bentuk matriks.</p>
+                </article>
+              </div>
+            </article>
+            <aside class="panel glass formula-panel">
+              <p class="kicker">RUMUS DETERMINAN 2×2</p>
+              <p class="formula">det(A) = ad − bc</p>
+              <p class="small-copy lead">Untuk matriks berordo 2×2, determinan dihitung dari selisih hasil kali diagonal utama dan diagonal sekunder.</p>
+            </aside>
+          </div>
+        </section>
+
+        <section id="procedure" class="view-panel" aria-label="Prosedur penggunaan">
+          <div class="scroll-panel center-layout">
+            <article class="panel glass" style="width:100%;max-width:1100px">
+              <p class="kicker">PANDUAN PENGGUNAAN</p>
+              <h2>Cara Menggunakan Laboratorium Ini</h2>
+              <p class="lead">Ikuti empat langkah berikut untuk mulai bereksperimen dengan matriks pada tab Simulasi.</p>
+              <div class="step-grid">
+                <article class="card">
+                  <div class="step-number">01</div>
+                  <h3 style="margin-top:12px">Isi Matriks A dan B</h3>
+                  <p>Masukkan nilai elemen pada kedua matriks di tab Simulasi.</p>
+                </article>
+                <article class="card">
+                  <div class="step-number">02</div>
+                  <h3 style="margin-top:12px">Pilih Operasi</h3>
+                  <p>Tentukan operasi yang ingin dihitung: penjumlahan, pengurangan, perkalian, determinan, atau invers.</p>
+                </article>
+                <article class="card">
+                  <div class="step-number">03</div>
+                  <h3 style="margin-top:12px">Tekan Hitung</h3>
+                  <p>Klik tombol Hitung untuk melihat hasil beserta penjelasan singkatnya.</p>
+                </article>
+                <article class="card">
+                  <div class="step-number">04</div>
+                  <h3 style="margin-top:12px">Kerjakan Lembar Kerja</h3>
+                  <p>Uji pemahamanmu dengan soal-soal pada tab Lembar Kerja.</p>
+                </article>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="simulation" class="view-panel" aria-label="Simulasi matriks">
+          <div class="scroll-panel simulation-layout">
+            <article class="panel glass">
+              <p class="kicker">SIMULASI INTERAKTIF</p>
+              <h2>Kalkulator Matriks 2×2</h2>
+              <p class="small-copy" style="margin-top:10px">Ubah nilai matriks A dan B, lalu pilih operasi yang ingin dihitung.</p>
+              <div class="matrix-pair">
+                <div>
+                  <h3 class="matrix-label">Matriks A</h3>
+                  <div class="matrix-box">
+                    <label class="hidden" for="a11">Matriks A baris 1 kolom 1</label>
+                    <input id="a11" class="matrix-input" type="number" value="2">
+                    <label class="hidden" for="a12">Matriks A baris 1 kolom 2</label>
+                    <input id="a12" class="matrix-input" type="number" value="1">
+                    <label class="hidden" for="a21">Matriks A baris 2 kolom 1</label>
+                    <input id="a21" class="matrix-input" type="number" value="3">
+                    <label class="hidden" for="a22">Matriks A baris 2 kolom 2</label>
+                    <input id="a22" class="matrix-input" type="number" value="4">
+                  </div>
+                </div>
+                <div>
+                  <h3 class="matrix-label">Matriks B</h3>
+                  <div class="matrix-box">
+                    <label class="hidden" for="b11">Matriks B baris 1 kolom 1</label>
+                    <input id="b11" class="matrix-input" type="number" value="1">
+                    <label class="hidden" for="b12">Matriks B baris 1 kolom 2</label>
+                    <input id="b12" class="matrix-input" type="number" value="2">
+                    <label class="hidden" for="b21">Matriks B baris 2 kolom 1</label>
+                    <input id="b21" class="matrix-input" type="number" value="0">
+                    <label class="hidden" for="b22">Matriks B baris 2 kolom 2</label>
+                    <input id="b22" class="matrix-input" type="number" value="5">
+                  </div>
+                </div>
+              </div>
+              <button id="calculate-button" type="button" class="button action-button" style="width:100%;margin-top:20px">
+                <span class="button-icon" aria-hidden="true">⌘</span> <span>Hitung</span>
+              </button>
+            </article>
+
+            <article class="panel glass">
+              <h3>Pilih Operasi</h3>
+              <div class="operation-grid">
+                <button class="operation-choice selected" type="button" data-operation="add">Penjumlahan (A + B)</button>
+                <button class="operation-choice" type="button" data-operation="subtract">Pengurangan (A − B)</button>
+                <button class="operation-choice" type="button" data-operation="multiply">Perkalian (A × B)</button>
+                <button class="operation-choice" type="button" data-operation="determinant">Determinan A</button>
+                <button class="operation-choice operation-wide" type="button" data-operation="inverse">Invers A</button>
+              </div>
+              <div class="hint-panel">
+                <p class="small-copy" style="margin:0">Hasil dan penjelasan langkah akan muncul di panel sebelah kanan setelah kamu menekan tombol Hitung.</p>
+              </div>
+            </article>
+
+            <article class="panel glass result-panel">
+              <div>
+                <h3>Hasil</h3>
+                <p id="result-expression" class="result-expression">A + B</p>
+                <div id="result-matrix" class="result-grid matrix-box" aria-live="polite">
+                  <span>3</span><span>3</span><span>3</span><span>9</span>
+                </div>
+                <p id="result-note" class="result-note">Penjumlahan dilakukan pada elemen yang posisinya sama.</p>
+              </div>
+              <div class="determinant-box">
+                <p style="margin:0;font-size:.75rem;font-weight:800;letter-spacing:.06em;color:var(--muted)">DETERMINAN MATRIKS A</p>
+                <p id="determinant-display" class="determinant-display">det(A) = 5</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="worksheet" class="view-panel" aria-label="Lembar kerja">
+          <div class="scroll-panel center-layout">
+            <article class="panel glass" style="width:100%;max-width:1100px">
+              <div class="worksheet-head">
+                <div>
+                  <p class="kicker">LATIHAN MANDIRI</p>
+                  <h2>Lembar Kerja Matriks</h2>
+                </div>
+                <button id="guide-button" class="button secondary-button" type="button">Lihat Panduan</button>
+              </div>
+              <div class="questions">
+                <article class="card">
+                  <h3>1. Hitung A + B jika A = [[2,1],[3,4]] dan B = [[1,2],[0,5]].</h3>
+                </article>
+                <article class="card">
+                  <h3>2. Tentukan determinan matriks A = [[2,1],[3,4]].</h3>
+                </article>
+                <article class="card">
+                  <h3>3. Carilah invers dari matriks A jika det(A) ≠ 0.</h3>
+                </article>
+              </div>
+              <div id="guide-panel" class="guide-panel hidden">
+                <h3>Panduan Singkat</h3>
+                <p class="lead">Gunakan tab Simulasi untuk memeriksa jawabanmu: masukkan nilai matriks yang sama, pilih operasi yang sesuai, lalu bandingkan hasilnya dengan perhitungan manualmu.</p>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="developer" class="view-panel" aria-label="Profil pengembang">
+          <div class="scroll-panel center-layout">
+            <article class="panel glass developer-panel">
+              <div class="developer-layout">
+                <div class="avatar-shell" aria-hidden="true"><span class="avatar-initials">FR</span></div>
+                <div>
+                  <p class="kicker">TENTANG PENGEMBANG</p>
+                  <h2>Farah R.</h2>
+                  <p style="margin:10px 0 0">Pengembang &amp; Perancang Materi</p>
+                  <div class="accent-rule"></div>
+                  <p class="lead">Laboratorium maya ini dibuat untuk membantu siswa memahami konsep matriks secara visual dan interaktif, sehingga belajar aljabar linear terasa lebih mudah dan menyenangkan.</p>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      let soundEnabled = true;
+      let audioContext;
+      let selectedOperation = "add";
+
+      const initialValues = {
+        a11: 2, a12: 1, a21: 3, a22: 4,
+        b11: 1, b12: 2, b21: 0, b22: 5
+      };
+
+      function tone(frequency, duration, type) {
+        if (!soundEnabled) return;
+
+        try {
+          audioContext = audioContext || new (window.AudioContext || window.webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gain = audioContext.createGain();
+
+          oscillator.type = type || "sine";
+          oscillator.frequency.value = frequency || 440;
+          gain.gain.setValueAtTime(0.05, audioContext.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + (duration || 0.06));
+
+          oscillator.connect(gain);
+          gain.connect(audioContext.destination);
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + (duration || 0.06));
+        } catch (error) {
+          return;
+        }
+      }
+
+      const fill = document.getElementById("loading-fill");
+      const status = document.getElementById("loading-status");
+      const startButton = document.getElementById("start-button");
+      let progress = 0;
+
+      const loader = setInterval(function () {
+        progress = Math.min(progress + 8, 100);
+        fill.style.width = progress + "%";
+        status.textContent = progress + "%";
+
+        if (progress === 100) {
+          clearInterval(loader);
+          startButton.disabled = false;
+        }
+      }, 100);
+
+      startButton.addEventListener("click", function () {
+        document.getElementById("splash-screen").classList.add("is-hidden");
+        tone(740, 0.1, "triangle");
+      });
+
+      document.querySelectorAll(".tab-btn").forEach(function (button) {
+        button.addEventListener("click", function () {
+          document.querySelectorAll(".tab-btn").forEach(function (tab) {
+            tab.classList.remove("active");
+          });
+
+          document.querySelectorAll(".view-panel").forEach(function (panel) {
+            panel.classList.remove("active");
+          });
+
+          button.classList.add("active");
+          document.getElementById(button.dataset.tab).classList.add("active");
+          tone(420, 0.05);
+        });
+      });
+
+      document.querySelectorAll(".operation-choice").forEach(function (button) {
+        button.addEventListener("click", function () {
+          document.querySelectorAll(".operation-choice").forEach(function (choice) {
+            choice.classList.remove("selected");
+          });
+
+          button.classList.add("selected");
+          selectedOperation = button.dataset.operation;
+          tone(510, 0.05);
+        });
+      });
+
+      function getMatrix(prefix) {
+        return [
+          [
+            Number(document.getElementById(prefix + "11").value) || 0,
+            Number(document.getElementById(prefix + "12").value) || 0
+          ],
+          [
+            Number(document.getElementById(prefix + "21").value) || 0,
+            Number(document.getElementById(prefix + "22").value) || 0
+          ]
+        ];
+      }
+
+      function determinant(matrix) {
+        return matrix[0][0] * matrix[1][1] - matrix[0][1] * matrix[1][0];
+      }
+
+      function formatValue(value) {
+        return Number.isInteger(value) ? String(value) : value.toFixed(2);
+      }
+
+      function renderMatrix(values) {
+        const output = document.getElementById("result-matrix");
+        const cells = output.querySelectorAll("span");
+        const flatValues = values.flat();
+
+        flatValues.forEach(function (value, index) {
+          cells[index].textContent = formatValue(value);
+        });
+      }
+
+      function calculate() {
+        const matrixA = getMatrix("a");
+        const matrixB = getMatrix("b");
+        const det = determinant(matrixA);
+
+        let values;
+        let note;
+        let expression;
+
+        if (selectedOperation === "add") {
+          values = [
+            [matrixA[0][0] + matrixB[0][0], matrixA[0][1] + matrixB[0][1]],
+            [matrixA[1][0] + matrixB[1][0], matrixA[1][1] + matrixB[1][1]]
+          ];
+          expression = "A + B";
+          note = "Penjumlahan dilakukan pada elemen yang posisinya sama.";
+        }
+
+        if (selectedOperation === "subtract") {
+          values = [
+            [matrixA[0][0] - matrixB[0][0], matrixA[0][1] - matrixB[0][1]],
+            [matrixA[1][0] - matrixB[1][0], matrixA[1][1] - matrixB[1][1]]
+          ];
+          expression = "A − B";
+          note = "Pengurangan dilakukan secara elemen-seposisi.";
+        }
+
+        if (selectedOperation === "multiply") {
+          values = [
+            [
+              matrixA[0][0] * matrixB[0][0] + matrixA[0][1] * matrixB[1][0],
+              matrixA[0][0] * matrixB[0][1] + matrixA[0][1] * matrixB[1][1]
+            ],
+            [
+              matrixA[1][0] * matrixB[0][0] + matrixA[1][1] * matrixB[1][0],
+              matrixA[1][0] * matrixB[0][1] + matrixA[1][1] * matrixB[1][1]
+            ]
+          ];
+          expression = "A × B";
+          note = "Setiap elemen hasil merupakan perkalian baris matriks A dengan kolom matriks B.";
+        }
+
+        if (selectedOperation === "determinant") {
+          values = [[det, 0], [0, det]];
+          expression = "det(A)";
+          note = "Nilai determinan matriks A ditampilkan pada diagonal hasil.";
+        }
+
+        if (selectedOperation === "inverse") {
+          if (det === 0) {
+            values = [[0, 0], [0, 0]];
+            expression = "A⁻¹ tidak tersedia";
+            note = "Matriks A tidak memiliki invers karena determinannya nol.";
+          } else {
+            values = [
+              [matrixA[1][1] / det, -matrixA[0][1] / det],
+              [-matrixA[1][0] / det, matrixA[0][0] / det]
+            ];
+            expression = "A⁻¹";
+            note = "Invers diperoleh dari 1/det(A) dikalikan matriks kofaktor yang ditranspos.";
+          }
+        }
+
+        renderMatrix(values);
+        document.getElementById("result-expression").textContent = expression;
+        document.getElementById("result-note").textContent = note;
+        document.getElementById("determinant-display").textContent = "det(A) = " + det;
+        tone(660, 0.08, "triangle");
+      }
+
+      document.getElementById("calculate-button").addEventListener("click", calculate);
+
+      document.getElementById("reset-button").addEventListener("click", function () {
+        Object.entries(initialValues).forEach(function (entry) {
+          document.getElementById(entry[0]).value = entry[1];
+        });
+
+        selectedOperation = "add";
+
+        document.querySelectorAll(".operation-choice").forEach(function (button) {
+          button.classList.toggle("selected", button.dataset.operation === "add");
+        });
+
+        calculate();
+      });
+
+      document.getElementById("sound-button").addEventListener("click", function () {
+        soundEnabled = !soundEnabled;
+        this.setAttribute("aria-pressed", String(soundEnabled));
+
+        if (soundEnabled) {
+          tone(700, 0.06);
+        }
+      });
+
+      document.getElementById("guide-button").addEventListener("click", function () {
+        document.getElementById("guide-panel").classList.toggle("hidden");
+        tone(500, 0.06);
+      });
+    });
+  </script>
+</body>
+</html>
